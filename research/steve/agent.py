@@ -25,15 +25,26 @@ import envwrap
 import valuerl
 import util
 from config import config
-
+import TwoStepTask
 
 def run_env(pipe):
-  env = envwrap.get_env(config["env"]["name"])
+
+  if config["env"]["name"] == "TwoStep":
+    print('run_env')
+    env = TwoStepTask.TwoStep()
+  else:
+    env = envwrap.get_env(config["env"]["name"])
+
   reset = True
   while True:
     if reset is True: pipe.send(env.reset())
     action = pipe.recv()
+    print('run_env) action')
+    print(str(action))
+
     obs, reward, done, reset = env.step(action)
+    print('run_env) obs: ')
+    print(str(obs))
     pipe.send((obs, reward, done, reset))
 
 class AgentManager(object):
@@ -76,11 +87,16 @@ class AgentManager(object):
     self.first = True
 
   def get_action(self, obs):
+
     if self.loaded_policy:
+      print('get_action')
+      print(obs)
       all_actions = self.sess.run(self.policy_actions, feed_dict={self.obs_loader: obs})
       all_actions = np.clip(all_actions, -1., 1.)
       return all_actions[:self.batch_size]
     else:
+      print('get_action_else')
+      print(obs)
       return [self.get_random_action() for _ in range(obs.shape[0])]
 
   def get_random_action(self, *args, **kwargs):
@@ -95,6 +111,12 @@ class AgentManager(object):
     frames = list(zip(self.obs, next_obs, actions, rewards, dones))
 
     self.obs = [o if resets[i] is False else self.agent_pipes[i].recv() for i, o in enumerate(next_obs)]
+    print('self.obs')
+    print(self.obs)
+    print('next_obs')
+    print(next_obs)
+    print('reset')
+    print(resets[0])
 
     for i, (t,r,reset) in enumerate(zip(self.total_rewards, rewards, resets)):
       if reset:

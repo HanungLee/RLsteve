@@ -21,6 +21,7 @@ except:
 import gym
 import numpy as np
 
+
 from config import config
 
 MAX_FRAMES = config["env"]["max_frames"]
@@ -30,6 +31,7 @@ gym.logger.level=40
 def get_env(env_name, *args, **kwargs):
   MAPPING = {
     "CartPole-v0": CartPoleWrapper,
+
   }
   if env_name in MAPPING: return MAPPING[env_name](env_name, *args, **kwargs)
   else: return NoTimeLimitMujocoWrapper(env_name, *args, **kwargs)
@@ -104,3 +106,4 @@ class NoTimeLimitMujocoWrapper(GymWrapper):
     self.observation_space = self.internal_env.observation_space
     self.action_space = self.internal_env.action_space
     self.custom_init()
+
