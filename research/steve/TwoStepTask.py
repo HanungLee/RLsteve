@@ -18,10 +18,7 @@ class TwoStep():
       init_prob_flag (optional): always 'easy' for this task
       envargs contains all other parameters that might be needed
     """
-    
-    
-    
-    
+
     self._name = "TwoStep"
     self._num_arms = 3
     self._max_reward = 1.0
@@ -33,7 +30,6 @@ class TwoStep():
     # TODO
     #self._flip_prob = envargs.flip_prob
     self._flip_prob = 0.3
-
 
     self._prob_transition = np.zeros((1, self._num_arms))   #prob to transition to state 1 (1-p for state 2)
     self._prob_reward = np.zeros((2, self._num_arms))   #prob reward
@@ -64,6 +60,11 @@ class TwoStep():
     self._init_episode()
     obs = self._current_state
     reward = 0
+    self._step = 0
+    self._total_reward = 0
+    self._best_total_reward = 0
+    self._best_reward = 0
+    self._trial = 0
     done = 0
     reset = done == 1. or self._step == MAX_FRAMES
     # return np.array([[obs]]), reward, done, reset
@@ -135,6 +136,7 @@ class TwoStep():
         self._best_reward = self._max_reward*np.max(current_prob_rewards)
         thisProb = current_prob_rewards[action-1]
         if np.random.random() < thisProb:
+          # print("give reward")
           reward = self._max_reward
         else:
           reward = 0.0
@@ -166,5 +168,7 @@ class TwoStep():
     obs = self._current_state
     reset = done == 1. or self._step == MAX_FRAMES
 
-    print(np.array([[obs]]).shape)
-    return np.array([[obs]]), reward, done, reset
+    # print(np.array([[obs]]).shape)
+
+    # print(reward, self._stage)
+    return np.array([obs]), reward, done, reset

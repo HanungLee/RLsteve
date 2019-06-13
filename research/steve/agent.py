@@ -39,12 +39,12 @@ def run_env(pipe):
   while True:
     if reset is True: pipe.send(env.reset())
     action = pipe.recv()
-    print('run_env) action')
-    print(str(action))
+    # print('run_env) action')
+    # print(str(action))
 
     obs, reward, done, reset = env.step(action)
-    print('run_env) obs: ')
-    print(str(obs))
+    # print('run_env) obs: ')
+    # print(str(obs))
     pipe.send((obs, reward, done, reset))
 
 class AgentManager(object):
@@ -86,23 +86,26 @@ class AgentManager(object):
 
     self.first = True
 
+    self.writer = tf.summary.FileWriter("./board/sample", self.sess.graph)
+
   def get_action(self, obs):
 
     if self.loaded_policy:
-      print('get_action')
-      print(obs)
+      # print('get_action')
+      # print(obs)
       all_actions = self.sess.run(self.policy_actions, feed_dict={self.obs_loader: obs})
       all_actions = np.clip(all_actions, -1., 1.)
       return all_actions[:self.batch_size]
     else:
-      print('get_action_else')
-      print(obs)
+      # print('get_action_else')
+      # print(obs)
       return [self.get_random_action() for _ in range(obs.shape[0])]
 
   def get_random_action(self, *args, **kwargs):
     return np.random.random(self.config["env"]["action_dim"]) * 2 - 1
 
   def step(self):
+
     actions = self.get_action(np.stack(self.obs))
     self.first = False
     [pipe.send(action) for pipe, action in zip(self.agent_pipes, actions)]
@@ -111,21 +114,26 @@ class AgentManager(object):
     frames = list(zip(self.obs, next_obs, actions, rewards, dones))
 
     self.obs = [o if resets[i] is False else self.agent_pipes[i].recv() for i, o in enumerate(next_obs)]
-    print('self.obs')
-    print(self.obs)
-    print('next_obs')
-    print(next_obs)
-    print('reset')
-    print(resets[0])
+    # print('self.obs')
+    # print(self.obs)
+    # print('next_obs')
+    # print(next_obs)
+    # print('reset')
+    # print(resets[0])
+    summary = tf.Summary()
 
     for i, (t,r,reset) in enumerate(zip(self.total_rewards, rewards, resets)):
       if reset:
         self.total_rewards[i] = 0.
         if self.evaluation and self.loaded_policy:
           with portalocker.Lock(self.log_path+'.greedy.csv', mode="a") as f: f.write("%2f,%d,%d,%2f\n" % (self.hours, self.epoch, self.frame_total, t+r))
+          summary.value.add(tag='total_reward', simple_value=t+r)
+          self.writer.add_summary(summary, self.frame_total)
 
       else:
         self.total_rewards[i] = t + r
+
+
 
     if self.evaluation and np.any(resets): self.reload()
 
